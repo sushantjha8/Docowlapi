@@ -15,7 +15,7 @@
 
 ### Create docker image  
     install potery
-    ''' pip install potery'''
+    ''' pip install potery modelscope'''
     Install and build envoiranment
     ''' potery install '''
     Download Model File
