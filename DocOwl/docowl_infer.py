@@ -16,7 +16,7 @@ class DocOwlInfer():
     def __init__(self, ckpt_path, anchors='grid_9', add_global_img=True, load_8bit=False, load_4bit=False):
         model_name = get_model_name_from_path(ckpt_path)
         ic(model_name)
-        self.tokenizer, self.model, _, _ = load_pretrained_model(ckpt_path, None, model_name, load_8bit=load_8bit, load_4bit=load_4bit, device="cpu")
+        self.tokenizer, self.model, _, _ = load_pretrained_model(ckpt_path, None, model_name, load_8bit=load_8bit, load_4bit=load_4bit, device="gpu")
         self.doc_image_processor = DocProcessor(image_size=448, anchors=anchors, add_global_img=add_global_img, add_textual_crop_indicator=True)
         self.streamer = TextStreamer(self.tokenizer, skip_prompt=True, skip_special_tokens=True)
 

@@ -1,3 +1,10 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+path = "./env"  # Add your desired path here
+build-backend = "poetry.core.masonry.api"
+
+
+
 [tool.poetry]
 name = "Docowlapi"
 version = "1.0.0"
@@ -40,11 +47,15 @@ fastapi = "*"
 icecream = "*"
 einops = "0.6.1"
 einops-exts = "0.0.4"
-timm = "0.6.13"
 
 
 
 
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+
+
+[[tool.poetry.source]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cu121"
+priority = "explicit"
+
+
