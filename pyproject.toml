@@ -1,0 +1,50 @@
+[tool.poetry]
+name = "Docowlapi"
+version = "1.0.0"
+description = "nyt"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
+license = "Apache-2.0"
+homepage = "https://github.com/sushantjha8/Docowlapi"
+repository = "https://github.com/sushantjha8/Docowlapi"
+documentation = "https://github.com/sushantjha8/Docowlapi"
+keywords = ["NER", "NLP", "Transformer"]
+package-mode = false
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+]
+
+[tool.poetry.dependencies]
+python = ">=3.8"
+torch = "2.0.1"
+torchvision = "0.15.2"
+modelscope = "*"
+transformers = "4.31.0"
+tokenizers = ">=0.12.1,<0.14"
+sentencepiece = "0.1.99"
+shortuuid = "*"
+accelerate = "0.21.0"
+peft = "0.4.0"
+bitsandbytes = "0.41.0"
+pydantic = ">=1,<2"
+markdown2 = "*"
+numpy = "*"
+scikit-learn = "1.2.2"
+gradio = "3.35.2"
+gradio_client = "0.2.9"
+requests = "*"
+httpx = "0.24.0"
+uvicorn = "*"
+fastapi = "*"
+icecream = "*"
+einops = "0.6.1"
+einops-exts = "0.0.4"
+timm = "0.6.13"
+
+
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
