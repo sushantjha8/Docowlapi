@@ -6,6 +6,7 @@ RUN mkdir /app
 WORKDIR /app
 # Copy the current directory contents into the container at /app
 COPY . /app
+RUN install poetry
 RUN poetry install
 # Make port 7860 available to the world outside this container
 EXPOSE 7860
