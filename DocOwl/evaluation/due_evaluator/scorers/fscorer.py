@@ -34,7 +34,7 @@ class FScorer(BaseScorer):
         self.__recall = []
 
     @classmethod
-    def from_scorers(cls, scorers: List['FScorer']) -> 'FScorer':
+    def from_scorers(cls, scorers: List["FScorer"]) -> "FScorer":
         """Get new scorers that is the ensamble of the scorers.
 
         Args:
@@ -49,17 +49,23 @@ class FScorer(BaseScorer):
             new_scorer.__precision.extend(scorer.__precision)
             new_scorer.__recall.extend(scorer.__recall)
         return new_scorer
-    
-    def flatten_annotations(self, annotations: List[Dict[str, Any]]) -> List[Annotation]:
+
+    def flatten_annotations(
+        self, annotations: List[Dict[str, Any]]
+    ) -> List[Annotation]:
         flatten_items = []
         for annotation in annotations:
-            for value in annotation['values']:
-                flatten_items.append(Annotation(
-                    key=annotation['key'],
-                    value=value['value'],
-                    value_variants=value['value_variants'] if 'value_variants' in value else []))
+            for value in annotation["values"]:
+                flatten_items.append(
+                    Annotation(
+                        key=annotation["key"],
+                        value=value["value"],
+                        value_variants=value["value_variants"]
+                        if "value_variants" in value
+                        else [],
+                    )
+                )
         return flatten_items
-        
 
     def add(self, out_items: Dict[str, Any], ref_items: Dict[str, Any]):
         """Add more items for computing corpus level scores.
@@ -69,8 +75,8 @@ class FScorer(BaseScorer):
             ref_items: reference of the evaluated document (line)
 
         """
-        prediction_annotations = self.flatten_annotations(out_items['annotations'])
-        ref_annotations = self.flatten_annotations(ref_items['annotations'])
+        prediction_annotations = self.flatten_annotations(out_items["annotations"])
+        ref_annotations = self.flatten_annotations(ref_items["annotations"])
 
         ref_annotations_copy = ref_annotations.copy()
         indicators = []

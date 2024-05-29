@@ -7,11 +7,18 @@ import time
 import gradio as gr
 import requests
 
-from mplug_docowl.conversation import (default_conversation, conv_templates,
-                                   SeparatorStyle)
+from mplug_docowl.conversation import (
+    default_conversation,
+    conv_templates,
+    SeparatorStyle,
+)
 from mplug_docowl.constants import LOGDIR
-from mplug_docowl.utils import (build_logger, server_error_msg,
-    violates_moderation, moderation_msg)
+from mplug_docowl.utils import (
+    build_logger,
+    server_error_msg,
+    violates_moderation,
+    moderation_msg,
+)
 from model_worker import ModelWorker
 import hashlib
 from icecream import ic
@@ -25,10 +32,12 @@ no_change_btn = gr.Button.update()
 enable_btn = gr.Button.update(interactive=True)
 disable_btn = gr.Button.update(interactive=False)
 
+
 def get_conv_log_filename():
     t = datetime.datetime.now()
     name = os.path.join(LOGDIR, f"{t.year}-{t.month:02d}-{t.day:02d}-conv.json")
     return name
+
 
 get_window_url_params = """
 function() {
@@ -101,13 +110,14 @@ def add_text(state, text, image, image_process_mode, request: gr.Request):
         if flagged:
             state.skip_next = True
             return (state, state.to_gradio_chatbot(), moderation_msg, None) + (
-                no_change_btn,) * 5
+                no_change_btn,
+            ) * 5
 
     text = text[:3584]  # Hard cut-off
     if image is not None:
         text = text[:3500]  # Hard cut-off for images
-        if '<|image|>' not in text:
-            text = '<|image|>' + text
+        if "<|image|>" not in text:
+            text = "<|image|>" + text
         text = (text, image, image_process_mode)
         if len(state.get_images(return_pil=True)) > 0:
             state = default_conversation.copy()
@@ -144,7 +154,9 @@ def http_bot(state, temperature, top_p, max_new_tokens, request: gr.Request):
     all_image_hash = [hashlib.md5(image.tobytes()).hexdigest() for image in all_images]
     for image, hash in zip(all_images, all_image_hash):
         t = datetime.datetime.now()
-        filename = os.path.join(LOGDIR, "serve_images", f"{t.year}-{t.month:02d}-{t.day:02d}", f"{hash}.jpg")
+        filename = os.path.join(
+            LOGDIR, "serve_images", f"{t.year}-{t.month:02d}-{t.day:02d}", f"{hash}.jpg"
+        )
         if not os.path.isfile(filename):
             os.makedirs(os.path.dirname(filename), exist_ok=True)
             image.save(filename)
@@ -155,13 +167,15 @@ def http_bot(state, temperature, top_p, max_new_tokens, request: gr.Request):
         "temperature": float(temperature),
         "top_p": float(top_p),
         "max_new_tokens": min(int(max_new_tokens), 2048),
-        "stop": state.sep if state.sep_style in [SeparatorStyle.SINGLE, SeparatorStyle.MPT] else state.sep2,
-        "images": f'List of {len(state.get_images())} images: {all_image_hash}',
+        "stop": state.sep
+        if state.sep_style in [SeparatorStyle.SINGLE, SeparatorStyle.MPT]
+        else state.sep2,
+        "images": f"List of {len(state.get_images())} images: {all_image_hash}",
     }
 
     logger.info(f"==== request ====\n{pload}")
 
-    pload['images'] = state.get_images()
+    pload["images"] = state.get_images()
 
     state.messages[-1][-1] = "▌"
     yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
@@ -175,21 +189,33 @@ def http_bot(state, temperature, top_p, max_new_tokens, request: gr.Request):
         # print('response:', response)
         for chunk in response:
             if chunk:
-                print('chunk:', chunk.decode())
+                print("chunk:", chunk.decode())
                 data = json.loads(chunk.decode())
                 if data["error_code"] == 0:
-                    output = data["text"][len(prompt):].strip()
+                    output = data["text"][len(prompt) :].strip()
                     state.messages[-1][-1] = output + "▌"
                     yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
                 else:
                     output = data["text"] + f" (error_code: {data['error_code']})"
                     state.messages[-1][-1] = output
-                    yield (state, state.to_gradio_chatbot()) + (disable_btn, disable_btn, disable_btn, enable_btn, enable_btn)
+                    yield (state, state.to_gradio_chatbot()) + (
+                        disable_btn,
+                        disable_btn,
+                        disable_btn,
+                        enable_btn,
+                        enable_btn,
+                    )
                     return
                 time.sleep(0.03)
     except requests.exceptions.RequestException as e:
         state.messages[-1][-1] = server_error_msg
-        yield (state, state.to_gradio_chatbot()) + (disable_btn, disable_btn, disable_btn, enable_btn, enable_btn)
+        yield (state, state.to_gradio_chatbot()) + (
+            disable_btn,
+            disable_btn,
+            disable_btn,
+            enable_btn,
+            enable_btn,
+        )
         return
 
     state.messages[-1][-1] = state.messages[-1][-1][:-1]
@@ -211,7 +237,7 @@ def http_bot(state, temperature, top_p, max_new_tokens, request: gr.Request):
         fout.write(json.dumps(data) + "\n")
 
 
-title_markdown = ("""
+title_markdown = """
 <h1 align="center"><a href="https://github.com/X-PLUG/mPLUG-DocOwl"><img src="https://github.com/X-PLUG/mPLUG-DocOwl/raw/main/assets/mPLUG_new1.png", alt="mPLUG-DocOwl" border="0" style="margin: 0 auto; height: 200px;" /></a> </h1>
 
 <h2 align="center"> mPLUG-DocOwl1.5: Unified Stucture Learning for OCR-free Document Understanding</h2>
@@ -235,22 +261,22 @@ title_markdown = ("""
     </div>
 </div>
 
-""")
+"""
 
 
-tos_markdown = ("""
+tos_markdown = """
 ### Terms of use
 By using this service, users are required to agree to the following terms:
 The service is a research preview intended for non-commercial use only. It only provides limited safety measures and may generate offensive content. It must not be used for any illegal, harmful, violent, racist, or sexual purposes. The service may collect user dialogue data for future research.
 Please click the "Flag" button if you get any inappropriate answer! We will collect those to keep improving our moderator.
 For an optimal experience, please use desktop computers for this demo, as mobile devices may compromise its quality.
-""")
+"""
 
 
-learn_more_markdown = ("""
+learn_more_markdown = """
 ### License
 The service is a research preview intended for non-commercial use only, subject to the model [License](https://github.com/facebookresearch/llama/blob/main/MODEL_CARD.md) of LLaMA, [Terms of Use](https://openai.com/policies/terms-of-use) of the data generated by OpenAI, and [Privacy Practices](https://chrome.google.com/webstore/detail/sharegpt-share-your-chatg/daiacboceoaocpibfodeljbdfacokfjb) of ShareGPT. Please contact us if you find any potential violation.
-""")
+"""
 
 block_css = """
 
@@ -264,9 +290,14 @@ block_css = """
 
 """
 
+
 def build_demo(embed_mode):
-    textbox = gr.Textbox(show_label=False, placeholder="Enter text and press ENTER", container=False)
-    with gr.Blocks(title="mPLUG-DocOwl1.5", theme=gr.themes.Default(), css=block_css) as demo:
+    textbox = gr.Textbox(
+        show_label=False, placeholder="Enter text and press ENTER", container=False
+    )
+    with gr.Blocks(
+        title="mPLUG-DocOwl1.5", theme=gr.themes.Default(), css=block_css
+    ) as demo:
         state = gr.State()
 
         if not embed_mode:
@@ -279,27 +310,75 @@ def build_demo(embed_mode):
                     # ["Crop", "Resize", "Pad", "Default"],
                     [],
                     value="Default",
-                    label="Preprocess for non-square image", visible=False)
-                
+                    label="Preprocess for non-square image",
+                    visible=False,
+                )
 
                 cur_dir = os.path.dirname(os.path.abspath(__file__))
-                gr.Examples(examples=[
-                    [f"{cur_dir}/examples/cvpr.png", "what is this schedule for? Give detailed explanation."],
-                    [f"{cur_dir}/examples/fflw0023_1.png", "Parse texts in the image."],
-                    [f"{cur_dir}/examples/col_type_46452.jpg", "Convert the table into Markdown format."],
-                    [f"{cur_dir}/examples/col_type_177029.jpg", "What is unusual about this image? Provide detailed explanation."],
-                    [f"{cur_dir}/examples/multi_col_60204.png", "Convert the illustration into Markdown language."],
-                    [f"{cur_dir}/examples/Rebecca_(1939_poster)_Small.jpeg", "What is the name of the movie in the poster? Provide detailed explanation."],
-                    [f"{cur_dir}/examples/extreme_ironing.jpg", "What is unusual about this image? Provide detailed explanation."],
-                ], inputs=[imagebox, textbox])
+                gr.Examples(
+                    examples=[
+                        [
+                            f"{cur_dir}/examples/cvpr.png",
+                            "what is this schedule for? Give detailed explanation.",
+                        ],
+                        [
+                            f"{cur_dir}/examples/fflw0023_1.png",
+                            "Parse texts in the image.",
+                        ],
+                        [
+                            f"{cur_dir}/examples/col_type_46452.jpg",
+                            "Convert the table into Markdown format.",
+                        ],
+                        [
+                            f"{cur_dir}/examples/col_type_177029.jpg",
+                            "What is unusual about this image? Provide detailed explanation.",
+                        ],
+                        [
+                            f"{cur_dir}/examples/multi_col_60204.png",
+                            "Convert the illustration into Markdown language.",
+                        ],
+                        [
+                            f"{cur_dir}/examples/Rebecca_(1939_poster)_Small.jpeg",
+                            "What is the name of the movie in the poster? Provide detailed explanation.",
+                        ],
+                        [
+                            f"{cur_dir}/examples/extreme_ironing.jpg",
+                            "What is unusual about this image? Provide detailed explanation.",
+                        ],
+                    ],
+                    inputs=[imagebox, textbox],
+                )
 
                 with gr.Accordion("Parameters", open=True) as parameter_row:
-                    temperature = gr.Slider(minimum=0.0, maximum=1.0, value=1.0, step=0.1, interactive=True, label="Temperature",)
-                    top_p = gr.Slider(minimum=0.0, maximum=1.0, value=0.7, step=0.1, interactive=True, label="Top P",)
-                    max_output_tokens = gr.Slider(minimum=0, maximum=1024, value=512, step=64, interactive=True, label="Max output tokens",)
+                    temperature = gr.Slider(
+                        minimum=0.0,
+                        maximum=1.0,
+                        value=1.0,
+                        step=0.1,
+                        interactive=True,
+                        label="Temperature",
+                    )
+                    top_p = gr.Slider(
+                        minimum=0.0,
+                        maximum=1.0,
+                        value=0.7,
+                        step=0.1,
+                        interactive=True,
+                        label="Top P",
+                    )
+                    max_output_tokens = gr.Slider(
+                        minimum=0,
+                        maximum=1024,
+                        value=512,
+                        step=64,
+                        interactive=True,
+                        label="Max output tokens",
+                    )
 
             with gr.Column(scale=8):
-                chatbot = gr.Chatbot(elem_id="Chatbot", label="mPLUG-DocOwl1.5 Chatbot", height=600)
+                chatbot = gr.Chatbot(
+                    elem_id="Chatbot", label="mPLUG-DocOwl1.5 Chatbot", height=600
+                )
                 with gr.Row():
                     with gr.Column(scale=8):
                         textbox.render()
@@ -309,7 +388,7 @@ def build_demo(embed_mode):
                     upvote_btn = gr.Button(value="👍  Upvote", interactive=False)
                     downvote_btn = gr.Button(value="👎  Downvote", interactive=False)
                     flag_btn = gr.Button(value="⚠️  Flag", interactive=False)
-                    #stop_btn = gr.Button(value="⏹️  Stop Generation", interactive=False)
+                    # stop_btn = gr.Button(value="⏹️  Stop Generation", interactive=False)
                     regenerate_btn = gr.Button(value="🔄  Regenerate", interactive=False)
                     clear_btn = gr.Button(value="🗑️  Clear", interactive=False)
 
@@ -324,67 +403,63 @@ def build_demo(embed_mode):
             upvote_last_response,
             state,
             [textbox, upvote_btn, downvote_btn, flag_btn],
-            queue=False
+            queue=False,
         )
         downvote_btn.click(
             downvote_last_response,
             state,
             [textbox, upvote_btn, downvote_btn, flag_btn],
-            queue=False
+            queue=False,
         )
         flag_btn.click(
             flag_last_response,
             state,
             [textbox, upvote_btn, downvote_btn, flag_btn],
-            queue=False
+            queue=False,
         )
 
         regenerate_btn.click(
             regenerate,
             [state, image_process_mode],
             [state, chatbot, textbox, imagebox] + btn_list,
-            queue=False
+            queue=False,
         ).then(
             http_bot,
             [state, temperature, top_p, max_output_tokens],
-            [state, chatbot] + btn_list
+            [state, chatbot] + btn_list,
         )
 
         clear_btn.click(
             clear_history,
             None,
             [state, chatbot, textbox, imagebox] + btn_list,
-            queue=False
+            queue=False,
         )
 
         textbox.submit(
             add_text,
             [state, textbox, imagebox, image_process_mode],
             [state, chatbot, textbox, imagebox] + btn_list,
-            queue=False
+            queue=False,
         ).then(
             http_bot,
             [state, temperature, top_p, max_output_tokens],
-            [state, chatbot] + btn_list
+            [state, chatbot] + btn_list,
         )
 
         submit_btn.click(
             add_text,
             [state, textbox, imagebox, image_process_mode],
             [state, chatbot, textbox, imagebox] + btn_list,
-            queue=False
+            queue=False,
         ).then(
             http_bot,
             [state, temperature, top_p, max_output_tokens],
-            [state, chatbot] + btn_list
+            [state, chatbot] + btn_list,
         )
 
         demo.load(
-            load_demo,
-            [url_params],
-            state,
-            _js=get_window_url_params,
-            queue=False
+            load_demo, [url_params], state, _js=get_window_url_params, queue=False
         )
 
     return demo
@@ -395,12 +470,18 @@ if __name__ == "__main__":
     parser.add_argument("--host", type=str, default="0.0.0.0")
     parser.add_argument("--port", type=int)
     parser.add_argument("--concurrency-count", type=int, default=10)
-    parser.add_argument("--model-list-mode", type=str, default="once",
-        choices=["once", "reload"])
-    parser.add_argument("--model-source", type=str, default="modelscope",
-        choices=["local", "modelscope", "huggingface"])
-    parser.add_argument("--model-version", type=str, default="Omni", 
-        choices=['stage1', 'Chat','Omni'])
+    parser.add_argument(
+        "--model-list-mode", type=str, default="once", choices=["once", "reload"]
+    )
+    parser.add_argument(
+        "--model-source",
+        type=str,
+        default="modelscope",
+        choices=["local", "modelscope", "huggingface"],
+    )
+    parser.add_argument(
+        "--model-version", type=str, default="Omni", choices=["stage1", "Chat", "Omni"]
+    )
     parser.add_argument("--model-path", type=str, default="iic/DocOwl1___5-Omni")
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--load-8bit", action="store_true")
@@ -410,34 +491,39 @@ if __name__ == "__main__":
     args = parser.parse_args()
     logger.info(f"args: {args}")
 
-    if args.model_source == 'modelscope':
+    if args.model_source == "modelscope":
         # download model from modelscope
         from modelscope.hub.snapshot_download import snapshot_download
-        model_dir = snapshot_download('iic/DocOwl1.5-'+args.model_version, cache_dir='./')
-        args.model_path = 'iic/DocOwl1___5-'+args.model_version
-    elif args.model_source == 'huggingface':
+
+        model_dir = snapshot_download(
+            "iic/DocOwl1.5-" + args.model_version, cache_dir="./"
+        )
+        args.model_path = "iic/DocOwl1___5-" + args.model_version
+    elif args.model_source == "huggingface":
         # download model from huggingface
         from huggingface_hub import snapshot_download
-        model_dir = snapshot_download('mPLUG/DocOwl1.5-'+args.model_version, cache_dir='./')
-        args.model_path = 'mPLUG/DocOwl1.5-'+args.model_version
 
-    print(os.listdir('./'))
+        model_dir = snapshot_download(
+            "mPLUG/DocOwl1.5-" + args.model_version, cache_dir="./"
+        )
+        args.model_path = "mPLUG/DocOwl1.5-" + args.model_version
 
-    model = ModelWorker(args.model_path, None, None, 
-            resolution=448, 
-            anchors='grid_9',
-            add_global_img=True,
-            load_8bit=args.load_8bit, 
-            load_4bit=args.load_4bit, 
-            device=args.device)
+    print(os.listdir("./"))
+
+    model = ModelWorker(
+        args.model_path,
+        None,
+        None,
+        resolution=448,
+        anchors="grid_9",
+        add_global_img=True,
+        load_8bit=args.load_8bit,
+        load_4bit=args.load_4bit,
+        device=args.device,
+    )
 
     logger.info(args)
     demo = build_demo(args.embed)
-    demo.queue(
-        concurrency_count=args.concurrency_count,
-        api_open=False
-    ).launch(
-        server_name=args.host,
-        server_port=args.port,
-        share=False
+    demo.queue(concurrency_count=args.concurrency_count, api_open=False).launch(
+        server_name=args.host, server_port=args.port, share=False
     )

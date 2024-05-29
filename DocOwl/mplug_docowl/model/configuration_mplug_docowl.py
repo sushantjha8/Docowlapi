@@ -167,10 +167,16 @@ class LlamaConfig(PretrainedConfig):
             raise ValueError(
                 f"`rope_scaling`'s type field must be one of ['linear', 'dynamic'], got {rope_scaling_type}"
             )
-        if rope_scaling_factor is None or not isinstance(rope_scaling_factor, float) or rope_scaling_factor <= 1.0:
-            raise ValueError(f"`rope_scaling`'s factor field must be a float > 1, got {rope_scaling_factor}")
+        if (
+            rope_scaling_factor is None
+            or not isinstance(rope_scaling_factor, float)
+            or rope_scaling_factor <= 1.0
+        ):
+            raise ValueError(
+                f"`rope_scaling`'s factor field must be a float > 1, got {rope_scaling_factor}"
+            )
 
-            
+
 class MplugOwlVisionConfig(PretrainedConfig):
     r"""
     This is the configuration class to store the configuration of a [`MplugOwlVisionModel`]. It is used to instantiate
@@ -248,14 +254,22 @@ class MplugOwlVisionConfig(PretrainedConfig):
         self.use_flash_attn = use_flash_attn
 
     @classmethod
-    def from_pretrained(cls, pretrained_model_name_or_path: Union[str, os.PathLike], **kwargs) -> "PretrainedConfig":
-        config_dict, kwargs = cls.get_config_dict(pretrained_model_name_or_path, **kwargs)
+    def from_pretrained(
+        cls, pretrained_model_name_or_path: Union[str, os.PathLike], **kwargs
+    ) -> "PretrainedConfig":
+        config_dict, kwargs = cls.get_config_dict(
+            pretrained_model_name_or_path, **kwargs
+        )
 
         # get the vision config dict if we are loading from MplugOwlConfig
         if config_dict.get("model_type") == "mplug-owl":
             config_dict = config_dict["vision_config"]
 
-        if "model_type" in config_dict and hasattr(cls, "model_type") and config_dict["model_type"] != cls.model_type:
+        if (
+            "model_type" in config_dict
+            and hasattr(cls, "model_type")
+            and config_dict["model_type"] != cls.model_type
+        ):
             logger.warning(
                 f"You are using a model of type {config_dict['model_type']} to instantiate a model of type "
                 f"{cls.model_type}. This is not supported for all configurations of models and can yield errors."
@@ -272,7 +286,7 @@ class MplugDocOwlHReducerConfig(PretrainedConfig):
         hidden_size=1024,
         initializer_range=0.02,
         layer_norm_eps=1e-6,
-        conv_shape='1x4',
+        conv_shape="1x4",
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -282,14 +296,22 @@ class MplugDocOwlHReducerConfig(PretrainedConfig):
         self.conv_shape = conv_shape
 
     @classmethod
-    def from_pretrained(cls, pretrained_model_name_or_path: Union[str, os.PathLike], **kwargs) -> "PretrainedConfig":
-        config_dict, kwargs = cls.get_config_dict(pretrained_model_name_or_path, **kwargs)
+    def from_pretrained(
+        cls, pretrained_model_name_or_path: Union[str, os.PathLike], **kwargs
+    ) -> "PretrainedConfig":
+        config_dict, kwargs = cls.get_config_dict(
+            pretrained_model_name_or_path, **kwargs
+        )
 
         # get the visual_abstractor config dict if we are loading from MplugOwlConfig
         if config_dict.get("model_type") == "mplug-docowl":
             config_dict = config_dict["hreducer_config"]
 
-        if "model_type" in config_dict and hasattr(cls, "model_type") and config_dict["model_type"] != cls.model_type:
+        if (
+            "model_type" in config_dict
+            and hasattr(cls, "model_type")
+            and config_dict["model_type"] != cls.model_type
+        ):
             logger.warning(
                 f"You are using a model of type {config_dict['model_type']} to instantiate a model of type "
                 f"{cls.model_type}. This is not supported for all configurations of models and can yield errors."
@@ -297,22 +319,26 @@ class MplugDocOwlHReducerConfig(PretrainedConfig):
 
         return cls.from_dict(config_dict, **kwargs)
 
+
 DEFAULT_VISUAL_CONFIG = {
     "visual_model": MplugOwlVisionConfig().to_dict(),
-    "visual_hreducer": MplugDocOwlHReducerConfig().to_dict()
+    "visual_hreducer": MplugDocOwlHReducerConfig().to_dict(),
 }
+
 
 class MPLUGDocOwlConfig(LlamaConfig):
     model_type = "mplug_docowl"
+
     def __init__(self, visual_config=None, **kwargs):
         if visual_config is None:
             self.visual_config = DEFAULT_VISUAL_CONFIG
         else:
             self.visual_config = visual_config
-        
+
         super().__init__(
             **kwargs,
         )
-        
+
+
 if __name__ == "__main__":
     print(MplugOwlVisionConfig().to_dict())

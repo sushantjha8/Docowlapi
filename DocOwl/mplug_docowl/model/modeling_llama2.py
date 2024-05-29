@@ -16,20 +16,21 @@ from transformers.utils import logging
 from .modeling_attn_mask_utils import _prepare_4d_causal_attention_mask
 from .configuration_mplug_docowl import LlamaConfig
 
-class MultiwayNetwork(nn.Module):
 
+class MultiwayNetwork(nn.Module):
     def __init__(self, module_provider, num_multiway=2):
         super(MultiwayNetwork, self).__init__()
 
-        self.multiway = torch.nn.ModuleList([module_provider() for _ in range(num_multiway)])
-    
-    def forward(self, hidden_states, multiway_indices):
+        self.multiway = torch.nn.ModuleList(
+            [module_provider() for _ in range(num_multiway)]
+        )
 
+    def forward(self, hidden_states, multiway_indices):
         if len(self.multiway) == 1:
             return self.multiway[0](hidden_states)
 
         output_hidden_states = torch.empty_like(hidden_states)
-        
+
         for idx, subway in enumerate(self.multiway):
             local_indices = multiway_indices.eq(idx).nonzero(as_tuple=True)
             hidden = hidden_states[local_indices].unsqueeze(1).contiguous()
@@ -39,9 +40,9 @@ class MultiwayNetwork(nn.Module):
                     output = output[0]
                 output = output.squeeze(1)
                 output_hidden_states[local_indices] = output
-        
+
         return output_hidden_states.contiguous()
-    
+
 
 class LlamaAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
@@ -62,14 +63,28 @@ class LlamaAttention(nn.Module):
                 f"hidden_size must be divisible by num_heads (got `hidden_size`: {self.hidden_size}"
                 f" and `num_heads`: {self.num_heads})."
             )
-        self.q_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=config.attention_bias)
-        self.k_proj = MultiwayNetwork(module_provider=partial(
-            nn.Linear, in_features=self.hidden_size, out_features=self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
+        self.q_proj = nn.Linear(
+            self.hidden_size, self.num_heads * self.head_dim, bias=config.attention_bias
         )
-        self.v_proj = MultiwayNetwork(module_provider=partial(
-            nn.Linear, in_features=self.hidden_size, out_features=self.num_key_value_heads * self.head_dim, bias=config.attention_bias)
+        self.k_proj = MultiwayNetwork(
+            module_provider=partial(
+                nn.Linear,
+                in_features=self.hidden_size,
+                out_features=self.num_key_value_heads * self.head_dim,
+                bias=config.attention_bias,
+            )
         )
-        self.o_proj = nn.Linear(self.num_heads * self.head_dim, self.hidden_size, bias=config.attention_bias)
+        self.v_proj = MultiwayNetwork(
+            module_provider=partial(
+                nn.Linear,
+                in_features=self.hidden_size,
+                out_features=self.num_key_value_heads * self.head_dim,
+                bias=config.attention_bias,
+            )
+        )
+        self.o_proj = nn.Linear(
+            self.num_heads * self.head_dim, self.hidden_size, bias=config.attention_bias
+        )
         self._init_rope()
 
     def _init_rope(self):
@@ -100,7 +115,11 @@ class LlamaAttention(nn.Module):
                 raise ValueError(f"Unknown RoPE scaling type {scaling_type}")
 
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
-        return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2).contiguous()
+        return (
+            tensor.view(bsz, seq_len, self.num_heads, self.head_dim)
+            .transpose(1, 2)
+            .contiguous()
+        )
 
     def forward(
         self,
@@ -115,19 +134,29 @@ class LlamaAttention(nn.Module):
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()
 
-        query_states = self.q_proj(hidden_states, )
+        query_states = self.q_proj(
+            hidden_states,
+        )
         key_states = self.k_proj(hidden_states, modality_indicators)
         value_states = self.v_proj(hidden_states, modality_indicators)
 
-        query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
-        key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-        value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+        query_states = query_states.view(
+            bsz, q_len, self.num_heads, self.head_dim
+        ).transpose(1, 2)
+        key_states = key_states.view(
+            bsz, q_len, self.num_key_value_heads, self.head_dim
+        ).transpose(1, 2)
+        value_states = value_states.view(
+            bsz, q_len, self.num_key_value_heads, self.head_dim
+        ).transpose(1, 2)
 
         kv_seq_len = key_states.shape[-2]
         if past_key_value is not None:
             kv_seq_len += past_key_value[0].shape[-2]
         cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
-        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
+        query_states, key_states = apply_rotary_pos_emb(
+            query_states, key_states, cos, sin, position_ids
+        )
 
         if past_key_value is not None:
             # reuse k, v, self_attention
@@ -139,7 +168,9 @@ class LlamaAttention(nn.Module):
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
 
-        attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
+        attn_weights = torch.matmul(
+            query_states, key_states.transpose(2, 3)
+        ) / math.sqrt(self.head_dim)
 
         if attn_weights.size() != (bsz, self.num_heads, q_len, kv_seq_len):
             raise ValueError(
@@ -155,7 +186,9 @@ class LlamaAttention(nn.Module):
             attn_weights = attn_weights + attention_mask
 
         # upcast attention to fp32
-        attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
+        attn_weights = nn.functional.softmax(
+            attn_weights, dim=-1, dtype=torch.float32
+        ).to(query_states.dtype)
         attn_output = torch.matmul(attn_weights, value_states)
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
@@ -176,19 +209,22 @@ class LlamaAttention(nn.Module):
         return attn_output, attn_weights, past_key_value
 
 
-
 class LlamaDecoderLayer(nn.Module):
     def __init__(self, config: LlamaConfig):
         super().__init__()
         self.hidden_size = config.hidden_size
         self.self_attn = LlamaAttention(config=config)
         self.mlp = LlamaMLP(config)
-        self.input_layernorm = MultiwayNetwork(module_provider=partial(
-            LlamaRMSNorm, hidden_size=config.hidden_size, eps=config.rms_norm_eps
-        ))
-        self.post_attention_layernorm = MultiwayNetwork(module_provider=partial(
-            LlamaRMSNorm, hidden_size=config.hidden_size, eps=config.rms_norm_eps
-        ))
+        self.input_layernorm = MultiwayNetwork(
+            module_provider=partial(
+                LlamaRMSNorm, hidden_size=config.hidden_size, eps=config.rms_norm_eps
+            )
+        )
+        self.post_attention_layernorm = MultiwayNetwork(
+            module_provider=partial(
+                LlamaRMSNorm, hidden_size=config.hidden_size, eps=config.rms_norm_eps
+            )
+        )
 
     def forward(
         self,
@@ -199,7 +235,9 @@ class LlamaDecoderLayer(nn.Module):
         past_key_value: Optional[Tuple[torch.Tensor]] = None,
         output_attentions: Optional[bool] = False,
         use_cache: Optional[bool] = False,
-    ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
+    ) -> Tuple[
+        torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]
+    ]:
         """
         Args:
             hidden_states (`torch.FloatTensor`): input to the layer of shape `(batch, seq_len, embed_dim)`
@@ -232,7 +270,9 @@ class LlamaDecoderLayer(nn.Module):
 
         # Fully Connected
         residual = hidden_states
-        hidden_states = self.post_attention_layernorm(hidden_states, modality_indicators)
+        hidden_states = self.post_attention_layernorm(
+            hidden_states, modality_indicators
+        )
         hidden_states = self.mlp(hidden_states)
         hidden_states = residual + hidden_states
 
@@ -260,23 +300,35 @@ def model_forward(
     output_hidden_states: Optional[bool] = None,
     return_dict: Optional[bool] = None,
 ) -> Union[Tuple, BaseModelOutputWithPast]:
-    output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+    output_attentions = (
+        output_attentions
+        if output_attentions is not None
+        else self.config.output_attentions
+    )
     output_hidden_states = (
-        output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        output_hidden_states
+        if output_hidden_states is not None
+        else self.config.output_hidden_states
     )
     use_cache = use_cache if use_cache is not None else self.config.use_cache
 
-    return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+    return_dict = (
+        return_dict if return_dict is not None else self.config.use_return_dict
+    )
 
     # retrieve input_ids and inputs_embeds
     if input_ids is not None and inputs_embeds is not None:
-        raise ValueError("You cannot specify both decoder_input_ids and decoder_inputs_embeds at the same time")
+        raise ValueError(
+            "You cannot specify both decoder_input_ids and decoder_inputs_embeds at the same time"
+        )
     elif input_ids is not None:
         batch_size, seq_length = input_ids.shape
     elif inputs_embeds is not None:
         batch_size, seq_length, _ = inputs_embeds.shape
     else:
-        raise ValueError("You have to specify either decoder_input_ids or decoder_inputs_embeds")
+        raise ValueError(
+            "You have to specify either decoder_input_ids or decoder_inputs_embeds"
+        )
 
     seq_length_with_past = seq_length
     past_key_values_length = 0
@@ -288,7 +340,10 @@ def model_forward(
     if position_ids is None:
         device = input_ids.device if input_ids is not None else inputs_embeds.device
         position_ids = torch.arange(
-            past_key_values_length, seq_length + past_key_values_length, dtype=torch.long, device=device
+            past_key_values_length,
+            seq_length + past_key_values_length,
+            dtype=torch.long,
+            device=device,
         )
         position_ids = position_ids.unsqueeze(0).view(-1, seq_length)
     else:
@@ -299,7 +354,9 @@ def model_forward(
     # embed positions
     if attention_mask is None:
         attention_mask = torch.ones(
-            (batch_size, seq_length_with_past), dtype=torch.bool, device=inputs_embeds.device
+            (batch_size, seq_length_with_past),
+            dtype=torch.bool,
+            device=inputs_embeds.device,
         )
     attention_mask = self._prepare_decoder_attention_mask(
         attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
@@ -368,7 +425,11 @@ def model_forward(
 
     next_cache = next_decoder_cache if use_cache else None
     if not return_dict:
-        return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)
+        return tuple(
+            v
+            for v in [hidden_states, next_cache, all_hidden_states, all_self_attns]
+            if v is not None
+        )
     return BaseModelOutputWithPast(
         last_hidden_state=hidden_states,
         past_key_values=next_cache,
@@ -417,11 +478,19 @@ def causal_model_forward(
     "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
     ```"""
 
-    output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
-    output_hidden_states = (
-        output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+    output_attentions = (
+        output_attentions
+        if output_attentions is not None
+        else self.config.output_attentions
     )
-    return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+    output_hidden_states = (
+        output_hidden_states
+        if output_hidden_states is not None
+        else self.config.output_hidden_states
+    )
+    return_dict = (
+        return_dict if return_dict is not None else self.config.use_return_dict
+    )
 
     # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
     outputs = self.model(
@@ -439,8 +508,13 @@ def causal_model_forward(
 
     hidden_states = outputs[0]
     if self.config.pretraining_tp > 1:
-        lm_head_slices = self.lm_head.weight.split(self.vocab_size // self.config.pretraining_tp, dim=0)
-        logits = [F.linear(hidden_states, lm_head_slices[i]) for i in range(self.config.pretraining_tp)]
+        lm_head_slices = self.lm_head.weight.split(
+            self.vocab_size // self.config.pretraining_tp, dim=0
+        )
+        logits = [
+            F.linear(hidden_states, lm_head_slices[i])
+            for i in range(self.config.pretraining_tp)
+        ]
         logits = torch.cat(logits, dim=-1)
     else:
         logits = self.lm_head(hidden_states)
@@ -471,16 +545,21 @@ def causal_model_forward(
         attentions=outputs.attentions,
     )
 
+
 def replace_llama_modality_adaptive():
     transformers.models.llama.configuration_llama.LlamaConfig = LlamaConfig
     transformers.models.llama.modeling_llama.LlamaAttention = LlamaAttention
     transformers.models.llama.modeling_llama.LlamaDecoderLayer = LlamaDecoderLayer
     transformers.models.llama.modeling_llama.LlamaModel.forward = model_forward
-    transformers.models.llama.modeling_llama.LlamaForCausalLM.forward = causal_model_forward
+    transformers.models.llama.modeling_llama.LlamaForCausalLM.forward = (
+        causal_model_forward
+    )
 
-    
+
 if __name__ == "__main__":
     replace_llama_modality_adaptive()
-    config = transformers.LlamaConfig.from_pretrained('/cpfs01/shared/public/test/vicuna-7b-v1.5/')
+    config = transformers.LlamaConfig.from_pretrained(
+        "/cpfs01/shared/public/test/vicuna-7b-v1.5/"
+    )
     model = transformers.LlamaForCausalLM(config)
     print(model)

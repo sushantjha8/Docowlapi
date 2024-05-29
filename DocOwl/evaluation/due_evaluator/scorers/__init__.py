@@ -6,4 +6,12 @@ from .wtq_scorer import WtqScorer
 from .group_anls import GroupAnlsScorer
 from .geval_scorer import GevalScorer
 
-__all__ = ['AnlsScorer', 'BaseScorer', 'FScorer', 'MeanFScorer', 'WtqScorer', 'GevalScorer', 'GroupAnlsScorer']
+__all__ = [
+    "AnlsScorer",
+    "BaseScorer",
+    "FScorer",
+    "MeanFScorer",
+    "WtqScorer",
+    "GevalScorer",
+    "GroupAnlsScorer",
+]

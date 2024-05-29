@@ -47,15 +47,7 @@ fastapi = "*"
 icecream = "*"
 einops = "0.6.1"
 einops-exts = "0.0.4"
+timm = "0.6.13"
 
-
-
-
-
-
-[[tool.poetry.source]]
-name = "pytorch"
-url = "https://download.pytorch.org/whl/cu121"
-priority = "explicit"
 
 

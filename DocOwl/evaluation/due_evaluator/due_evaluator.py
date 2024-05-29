@@ -1,9 +1,27 @@
 import sys
 from collections import defaultdict
-from typing import Callable, DefaultDict, List, Optional, Set, Tuple, TypeVar, Union, Generic
+from typing import (
+    Callable,
+    DefaultDict,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+    Generic,
+)
 from copy import deepcopy
 
-from due_evaluator.scorers import AnlsScorer, BaseScorer, FScorer, MeanFScorer, WtqScorer, GevalScorer, GroupAnlsScorer
+from due_evaluator.scorers import (
+    AnlsScorer,
+    BaseScorer,
+    FScorer,
+    MeanFScorer,
+    WtqScorer,
+    GevalScorer,
+    GroupAnlsScorer,
+)
 
 TScorer = TypeVar("TScorer", bound=BaseScorer)
 
@@ -18,7 +36,7 @@ class DueEvaluator:
         property_set: Optional[Set[str]] = None,
         ignore_case: bool = False,
         path: Optional[str] = None,
-        metric: Optional[str] = 'F1',
+        metric: Optional[str] = "F1",
     ):
         """Initialize DueEvaluator.
 
@@ -71,23 +89,25 @@ class DueEvaluator:
 
     def create_scorer(self) -> BaseScorer:
         scorer: BaseScorer
-        if self.metric == 'F1':
+        if self.metric == "F1":
             scorer = FScorer()
-        elif self.metric == 'ANLS':
+        elif self.metric == "ANLS":
             scorer = AnlsScorer()
-        elif self.metric == 'MEAN-F1':
+        elif self.metric == "MEAN-F1":
             scorer = MeanFScorer()
-        elif self.metric == 'WTQ':
+        elif self.metric == "WTQ":
             scorer = WtqScorer()
-        elif self.metric == 'GROUP-ANLS':
+        elif self.metric == "GROUP-ANLS":
             scorer = GroupAnlsScorer()
-        elif self.metric == 'GEVAL':
+        elif self.metric == "GEVAL":
             scorer = GevalScorer()
         else:
             raise ValueError(self.metric)
         return scorer
 
-    def filter_properties(self, doc: dict, values: Union[str, List[str], Set[str]]) -> List[str]:
+    def filter_properties(
+        self, doc: dict, values: Union[str, List[str], Set[str]]
+    ) -> List[str]:
         """Filter the list of properties by provided property name(s).
 
         Args:
@@ -102,7 +122,9 @@ class DueEvaluator:
             values = [values]
 
         doc_copy = deepcopy(doc)
-        doc_copy['annotations'] = [a for a in doc_copy['annotations'] if a['key'] in values]
+        doc_copy["annotations"] = [
+            a for a in doc_copy["annotations"] if a["key"] in values
+        ]
         return doc_copy
 
     def _evalute(self) -> Tuple[BaseScorer, DefaultDict[str, BaseScorer]]:
@@ -116,15 +138,17 @@ class DueEvaluator:
         general_scorer = self.create_scorer()
         reference_labels: Set[str] = set()
         for ans_items, ref_items in zip(self.answers, self.reference):
-
             if self.ignore_case:
                 ans_items = self.uppercase_items(ans_items)
                 ref_items = self.uppercase_items(ref_items)
 
             if general_scorer.support_feature_scores():
-                reference_labels |= set(a['key'] for a in ref_items['annotations'])
+                reference_labels |= set(a["key"] for a in ref_items["annotations"])
 
-                for label in set(item['key'] for item in ref_items['annotations'] + ans_items['annotations']):
+                for label in set(
+                    item["key"]
+                    for item in ref_items["annotations"] + ans_items["annotations"]
+                ):
                     if self.property_set and label not in self.property_set:
                         continue
                     label_out = self.filter_properties(ans_items, label)
@@ -153,14 +177,18 @@ class DueEvaluator:
             document: with with uppercased annotations.
 
         """
-        for item in document['annotations']:
-            for value_dict in item['values']:
-                if 'value' in value_dict:
-                    value_dict['value'] = value_dict['value'].upper()
-                if 'value_variants' in value_dict:
-                    value_dict['value_variants'] = [variant.upper() for variant in value_dict['value_variants']]
-                if 'children' in value_dict:
-                    value_dict['children'] = self.uppercase_items({'annotations': value_dict['children']})['annotations']
+        for item in document["annotations"]:
+            for value_dict in item["values"]:
+                if "value" in value_dict:
+                    value_dict["value"] = value_dict["value"].upper()
+                if "value_variants" in value_dict:
+                    value_dict["value_variants"] = [
+                        variant.upper() for variant in value_dict["value_variants"]
+                    ]
+                if "children" in value_dict:
+                    value_dict["children"] = self.uppercase_items(
+                        {"annotations": value_dict["children"]}
+                    )["annotations"]
         return document
 
     def line_by_line(self):

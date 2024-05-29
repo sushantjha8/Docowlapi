@@ -28,10 +28,10 @@ class AnlsScorer(BaseScorer):
             ref_items: reference of the evaluated document (line)
 
         """
-        out_ann = sorted(out_items['annotations'], key=itemgetter('key'))
-        ref_ann = sorted(ref_items['annotations'], key=itemgetter('key'))
-        assert [a['key'][:100] for a in out_ann] == [a['key'][:100] for a in ref_ann]
-        
+        out_ann = sorted(out_items["annotations"], key=itemgetter("key"))
+        ref_ann = sorted(ref_items["annotations"], key=itemgetter("key"))
+        assert [a["key"][:100] for a in out_ann] == [a["key"][:100] for a in ref_ann]
+
         """try:
             # assert [a['key'][:100] for a in out_ann] == [a['key'][:100] for a in ref_ann]
             out_keys = [a['key'][:100] for a in out_ann]
@@ -52,14 +52,18 @@ class AnlsScorer(BaseScorer):
             # print('gt:', ref_keys)
             exit(0)"""
 
-        for out, ref in zip(out_ann, ref_ann):            
-            assert len(out['values']) == 1
-            val = out['values'][0]['value']
-            possible_vals = ref['values'][0]['value_variants']
-            best_score = max([textdistance.levenshtein.normalized_similarity(val, pos)
-                              for pos in possible_vals])
+        for out, ref in zip(out_ann, ref_ann):
+            assert len(out["values"]) == 1
+            val = out["values"][0]["value"]
+            possible_vals = ref["values"][0]["value_variants"]
+            best_score = max(
+                [
+                    textdistance.levenshtein.normalized_similarity(val, pos)
+                    for pos in possible_vals
+                ]
+            )
             if 1 - self.threshold >= best_score:
-                best_score = 0.0            
+                best_score = 0.0
             self.__scores.append(best_score)
 
     def score(self) -> float:

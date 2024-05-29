@@ -29,13 +29,13 @@ class AccuracyScorer(BaseScorer):
             ref_items: reference of the evaluated document (line)
 
         """
-        out_ann = sorted(out_items['annotations'], key=itemgetter('key'))
-        ref_ann = sorted(ref_items['annotations'], key=itemgetter('key'))
-        assert [a['key'] for a in out_ann] == [a['key'] for a in ref_ann]
+        out_ann = sorted(out_items["annotations"], key=itemgetter("key"))
+        ref_ann = sorted(ref_items["annotations"], key=itemgetter("key"))
+        assert [a["key"] for a in out_ann] == [a["key"] for a in ref_ann]
 
         for out, ref in zip(out_ann, ref_ann):
-            o_values = [v['value'] for v in out['values']]
-            r_values = [v['value'] for v in ref['values']]
+            o_values = [v["value"] for v in out["values"]]
+            r_values = [v["value"] for v in ref["values"]]
             score = int(self.check_denotation(o_values, r_values))
             self.__scores.append(score)
 

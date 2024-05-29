@@ -18,11 +18,12 @@ logger = logging.getLogger(__name__)
 
 def normalize(x):
     # Remove diacritics
-    x = ''.join(c for c in unicodedata.normalize('NFKD', x)
-                if unicodedata.category(c) != 'Mn')
+    x = "".join(
+        c for c in unicodedata.normalize("NFKD", x) if unicodedata.category(c) != "Mn"
+    )
     # Normalize quotes and dashes
     x = re.sub(r"[‘’´`]", "'", x)
-    x = re.sub(r"[“”]", "\"", x)
+    x = re.sub(r"[“”]", '"', x)
     x = re.sub(r"[‐‑‒–—−]", "-", x)
     while True:
         old_x = x
@@ -31,14 +32,14 @@ def normalize(x):
         # Remove details in parenthesis
         x = re.sub(r"(?<!^)( \([^)]*\))*$", "", x.strip())
         # Remove outermost quotation mark
-        x = re.sub(r'^"([^"]*)"$', r'\1', x.strip())
+        x = re.sub(r'^"([^"]*)"$', r"\1", x.strip())
         if x == old_x:
             break
     # Remove final '.'
-    if x and x[-1] == '.':
+    if x and x[-1] == ".":
         x = x[:-1]
     # Collapse whitespaces and convert to lower case
-    x = re.sub(r'\s+', ' ', x, flags=re.U).lower().strip()
+    x = re.sub(r"\s+", " ", x, flags=re.U).lower().strip()
     return x
 
 
@@ -64,7 +65,6 @@ class Value(object):
 
 
 class StringValue(Value):
-
     def __init__(self, content):
         assert isinstance(content, str)
         self._normalized = normalize(content)
@@ -77,7 +77,8 @@ class StringValue(Value):
         return self._hash
 
     def __str__(self):
-        return 'S' +  str([self.normalized])
+        return "S" + str([self.normalized])
+
     __repr__ = __str__
 
     def match(self, other):
@@ -86,7 +87,6 @@ class StringValue(Value):
 
 
 class NumberValue(Value):
-
     def __init__(self, amount, original_string=None):
         assert isinstance(amount, (int, float))
         if abs(amount - round(amount)) < 1e-6:
@@ -110,7 +110,8 @@ class NumberValue(Value):
         return self._hash
 
     def __str__(self):
-        return ('N(%f)' % self.amount) + str([self.normalized])
+        return ("N(%f)" % self.amount) + str([self.normalized])
+
     __repr__ = __str__
 
     def match(self, other):
@@ -139,7 +140,6 @@ class NumberValue(Value):
 
 
 class DateValue(Value):
-
     def __init__(self, year, month, day, original_string=None):
         """Create a new DateValue. Placeholders are marked as -1."""
         assert isinstance(year, int)
@@ -150,10 +150,11 @@ class DateValue(Value):
         self._month = month
         self._day = day
         if not original_string:
-            self._normalized = '{}-{}-{}'.format(
-                year if year != -1 else 'xx',
-                month if month != -1 else 'xx',
-                day if day != '-1' else 'xx')
+            self._normalized = "{}-{}-{}".format(
+                year if year != -1 else "xx",
+                month if month != -1 else "xx",
+                day if day != "-1" else "xx",
+            )
         else:
             self._normalized = normalize(original_string)
         self._hash = hash((self._year, self._month, self._day))
@@ -169,8 +170,10 @@ class DateValue(Value):
         return self._hash
 
     def __str__(self):
-        return (('D(%d,%d,%d)' % (self._year, self._month, self._day))
-                + str([self._normalized]))
+        return ("D(%d,%d,%d)" % (self._year, self._month, self._day)) + str(
+            [self._normalized]
+        )
+
     __repr__ = __str__
 
     def match(self, other):
@@ -188,11 +191,11 @@ class DateValue(Value):
             tuple (year, month, date) if successful; otherwise None.
         """
         try:
-            ymd = text.lower().split('-')
+            ymd = text.lower().split("-")
             assert len(ymd) == 3
-            year = -1 if ymd[0] in ('xx', 'xxxx') else int(ymd[0])
-            month = -1 if ymd[1] == 'xx' else int(ymd[1])
-            day = -1 if ymd[2] == 'xx' else int(ymd[2])
+            year = -1 if ymd[0] in ("xx", "xxxx") else int(ymd[0])
+            month = -1 if ymd[1] == "xx" else int(ymd[1])
+            day = -1 if ymd[2] == "xx" else int(ymd[2])
             assert not (year == month == day == -1)
             assert month == -1 or 1 <= month <= 12
             assert day == -1 or 1 <= day <= 31
@@ -251,14 +254,15 @@ class WtqScorer(AccuracyScorer):
         if corenlp_values is not None:
             assert isinstance(corenlp_values, (list, tuple, set))
             assert len(original_strings) == len(corenlp_values)
-            return list(set(to_value(x, y) for (x, y)
-                    in zip(original_strings, corenlp_values)))
+            return list(
+                set(to_value(x, y) for (x, y) in zip(original_strings, corenlp_values))
+            )
         else:
             return list(set(self.to_value(x) for x in original_strings))
 
     def check_denotation(self, predicted_values: list, target_values: list):
         """Return True if the predicted denotation is correct.
-        
+
         Args:
             predicted_values (list[Value])
             target_values (list[Value])
@@ -286,13 +290,13 @@ class WtqScorer(AccuracyScorer):
             ref_items: reference of the evaluated document (line)
 
         """
-        out_ann = sorted(out_items['annotations'], key=itemgetter('key'))
-        ref_ann = sorted(ref_items['annotations'], key=itemgetter('key'))
-        assert [a['key'][:100] for a in out_ann] == [a['key'][:100] for a in ref_ann]
+        out_ann = sorted(out_items["annotations"], key=itemgetter("key"))
+        ref_ann = sorted(ref_items["annotations"], key=itemgetter("key"))
+        assert [a["key"][:100] for a in out_ann] == [a["key"][:100] for a in ref_ann]
 
         for out, ref in zip(out_ann, ref_ann):
-            o_values = [v['value'] for v in out['values']]
-            r_values = [v['value'] for v in ref['values']]
+            o_values = [v["value"] for v in out["values"]]
+            r_values = [v["value"] for v in ref["values"]]
             score = int(self.check_denotation(o_values, r_values))
             self.__scores.append(score)
 

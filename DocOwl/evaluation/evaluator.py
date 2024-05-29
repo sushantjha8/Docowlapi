@@ -23,7 +23,6 @@ ContainAccuracy for MultimodalOCR LLM zero-shot text-recognition
 """
 
 
-
 def anls_metric(target: str, prediction: str, theta: float = 0.5):
     """Calculates ANLS for DocVQA.
 
@@ -46,9 +45,10 @@ def anls_metric(target: str, prediction: str, theta: float = 0.5):
     normalized_ld = edit_distance / max(len(target), len(prediction))
     return 1.0 - normalized_ld if normalized_ld < theta else 0.0
 
-def relaxed_correctness(target: str,
-                        prediction: str,
-                        max_relative_change: float = 0.05) -> bool:
+
+def relaxed_correctness(
+    target: str, prediction: str, max_relative_change: float = 0.05
+) -> bool:
     """Calculates relaxed correctness.
 
     The correctness tolerates certain error ratio defined by max_relative_change.
@@ -97,21 +97,20 @@ def iou_match(target: list, prediction: list, threshold=0.5):
     """
     g_x1, g_y1, g_x2, g_y2 = target
     p_x1, p_y1, p_x2, p_y2 = prediction
-    
+
     g_w = g_x2 - g_x1
     p_w = p_x2 - p_x1
     g_h = g_y2 - g_y1
     p_h = p_y2 - p_y1
 
-    W = (min(g_x2, p_x2)-max(g_x1, p_x1))
-    H = (min(g_y2, p_y2)-max(g_y1, p_y1))
-    Intersection = W*H
-    
+    W = min(g_x2, p_x2) - max(g_x1, p_x1)
+    H = min(g_y2, p_y2) - max(g_y1, p_y1)
+    Intersection = W * H
 
     if Intersection <= 0:
         return 0.0
 
-    Union = g_w*g_h + p_w*p_h -Intersection
+    Union = g_w * g_h + p_w * p_h - Intersection
     # ic(W, H, Intersection, Union)
 
     if Intersection / Union >= threshold:
@@ -127,7 +126,8 @@ def remove_special_chars_and_lower(s):
     # print('new:', s)
     return s.lower()
 
-def contain_match(target:str, prediction:str):
+
+def contain_match(target: str, prediction: str):
     def has_word(sentence, word):
         pattern = r"\b" + re.escape(word) + r"\b"
         match = re.search(pattern, sentence)
@@ -135,89 +135,105 @@ def contain_match(target:str, prediction:str):
             return True
         else:
             return False
+
     # print(prediction, target, float(has_word(prediction, target)))
     return float(has_word(prediction, target))
 
 
-def cider(
-    targets: Sequence[Sequence[str]],
-    predictions: Sequence[str]) -> float:
+def cider(targets: Sequence[Sequence[str]], predictions: Sequence[str]) -> float:
     """Compute CIDEr score."""
     coco_tokenizer = PTBTokenizer()
     scorer = Cider()
     score, scores = scorer.compute_score(
-      gts=coco_tokenizer.tokenize({
-          str(i): [{"caption": t} for t in target]
-          for i, target in enumerate(targets)
-      }),
-      res=coco_tokenizer.tokenize({
-          str(i): [{"caption": prediction}]
-          for i, prediction in enumerate(predictions)
-      }))
+        gts=coco_tokenizer.tokenize(
+            {
+                str(i): [{"caption": t} for t in target]
+                for i, target in enumerate(targets)
+            }
+        ),
+        res=coco_tokenizer.tokenize(
+            {
+                str(i): [{"caption": prediction}]
+                for i, prediction in enumerate(predictions)
+            }
+        ),
+    )
     score = float(score) * 100.0
     scores = [float(s) * 100.0 for s in scores.tolist()]
     return score, scores
 
-def rouge(
-    targets: Sequence[Sequence[str]],
-    predictions: Sequence[str]) -> float:
+
+def rouge(targets: Sequence[Sequence[str]], predictions: Sequence[str]) -> float:
     """Compute CIDEr score."""
     coco_tokenizer = PTBTokenizer()
     scorer = Rouge()
     score, scores = scorer.compute_score(
-      gts=coco_tokenizer.tokenize({
-          str(i): [{"caption": t} for t in target]
-          for i, target in enumerate(targets)
-      }),
-      res=coco_tokenizer.tokenize({
-          str(i): [{"caption": prediction}]
-          for i, prediction in enumerate(predictions)
-      }))
+        gts=coco_tokenizer.tokenize(
+            {
+                str(i): [{"caption": t} for t in target]
+                for i, target in enumerate(targets)
+            }
+        ),
+        res=coco_tokenizer.tokenize(
+            {
+                str(i): [{"caption": prediction}]
+                for i, prediction in enumerate(predictions)
+            }
+        ),
+    )
     score = float(score) * 100.0
     scores = [float(s) * 100.0 for s in scores.tolist()]
     return score, scores
 
-def meteor(
-    targets: Sequence[Sequence[str]],
-    predictions: Sequence[str]) -> float:
+
+def meteor(targets: Sequence[Sequence[str]], predictions: Sequence[str]) -> float:
     """Compute CIDEr score."""
     coco_tokenizer = PTBTokenizer()
     scorer = Meteor()
     score, scores = scorer.compute_score(
-      gts=coco_tokenizer.tokenize({
-          str(i): [{"caption": t} for t in target]
-          for i, target in enumerate(targets)
-      }),
-      res=coco_tokenizer.tokenize({
-          str(i): [{"caption": prediction}]
-          for i, prediction in enumerate(predictions)
-      }))
+        gts=coco_tokenizer.tokenize(
+            {
+                str(i): [{"caption": t} for t in target]
+                for i, target in enumerate(targets)
+            }
+        ),
+        res=coco_tokenizer.tokenize(
+            {
+                str(i): [{"caption": prediction}]
+                for i, prediction in enumerate(predictions)
+            }
+        ),
+    )
     score = float(score) * 100.0
     scores = [float(s) * 100.0 for s in scores]
     return score, scores
 
+
 def bleu(
-    ngram: int,
-    targets: Sequence[Sequence[str]],
-    predictions: Sequence[str]) -> float:
+    ngram: int, targets: Sequence[Sequence[str]], predictions: Sequence[str]
+) -> float:
     """Compute Bleu score."""
     assert ngram <= 4
     coco_tokenizer = PTBTokenizer()
 
     scorer = Bleu(4)
     score, scores = scorer.compute_score(
-      gts=coco_tokenizer.tokenize({
-          str(i): [{"caption": t} for t in target]
-          for i, target in enumerate(targets)
-      }),
-      res=coco_tokenizer.tokenize({
-          str(i): [{"caption": prediction}]
-          for i, prediction in enumerate(predictions)
-      }))
-    
-    
-    score = score[ngram-1]
-    scores = scores[ngram-1]
+        gts=coco_tokenizer.tokenize(
+            {
+                str(i): [{"caption": t} for t in target]
+                for i, target in enumerate(targets)
+            }
+        ),
+        res=coco_tokenizer.tokenize(
+            {
+                str(i): [{"caption": prediction}]
+                for i, prediction in enumerate(predictions)
+            }
+        ),
+    )
+
+    score = score[ngram - 1]
+    scores = scores[ngram - 1]
     # ic(score)
     # ic(scores)
     score = float(score) * 100.0
@@ -229,7 +245,8 @@ def metric_calculate(
     targets: Sequence[Sequence[str]],
     predictions: Sequence[str],
     metric_fn: Callable[[str, str], Any],
-    normalize_fn: Callable[[str], str] = lambda v: v):
+    normalize_fn: Callable[[str], str] = lambda v: v,
+):
     """Aggregate target-prediction pair metrics over a dataset."""
     assert len(targets) == len(predictions)
     total = 0
@@ -242,10 +259,10 @@ def metric_calculate(
     score = (100.0 * total) / len(targets)
     return score, scores
 
+
 def doc_evaluate(
-    metric: str,
-    targets: Sequence[Sequence[str]],
-    predictions: Sequence[str]):
+    metric: str, targets: Sequence[Sequence[str]], predictions: Sequence[str]
+):
     """Calculates evaluation metrics.
 
     Args:
@@ -258,33 +275,54 @@ def doc_evaluate(
     """
     results = {}
 
-    assert metric in ['ExactAccuracy', 'RelaxedAccuracy', 'ANLS', 'ContainAccuracy', 
-                        'CIDEr', 'BLEU1', 'BLEU2', 'BLEU3', 'BLEU4', 'RougeL', 'Meteor',
-                        'IOU@0.5']
-    if metric=='ExactAccuracy': # case sensitive
+    assert metric in [
+        "ExactAccuracy",
+        "RelaxedAccuracy",
+        "ANLS",
+        "ContainAccuracy",
+        "CIDEr",
+        "BLEU1",
+        "BLEU2",
+        "BLEU3",
+        "BLEU4",
+        "RougeL",
+        "Meteor",
+        "IOU@0.5",
+    ]
+    if metric == "ExactAccuracy":  # case sensitive
         score, scores = metric_calculate(targets, predictions, metric_fn=exact_match)
-    elif metric=='IOU@0.5': 
+    elif metric == "IOU@0.5":
         score, scores = metric_calculate(targets, predictions, metric_fn=iou_match)
-    elif metric == 'ANLS':
-        score, scores = metric_calculate(targets, predictions, metric_fn=anls_metric, normalize_fn=lambda v: v.lower())
-    elif metric == 'RelaxedAccuracy':
-        score, scores = metric_calculate(targets, predictions, metric_fn=relaxed_correctness)
-    elif metric == 'ContainAccuracy':
-        score, scores = metric_calculate(targets, predictions, metric_fn=contain_match, normalize_fn=remove_special_chars_and_lower)
-    elif metric == 'CIDEr':
+    elif metric == "ANLS":
+        score, scores = metric_calculate(
+            targets,
+            predictions,
+            metric_fn=anls_metric,
+            normalize_fn=lambda v: v.lower(),
+        )
+    elif metric == "RelaxedAccuracy":
+        score, scores = metric_calculate(
+            targets, predictions, metric_fn=relaxed_correctness
+        )
+    elif metric == "ContainAccuracy":
+        score, scores = metric_calculate(
+            targets,
+            predictions,
+            metric_fn=contain_match,
+            normalize_fn=remove_special_chars_and_lower,
+        )
+    elif metric == "CIDEr":
         score, scores = cider(targets, predictions)
-    elif metric == 'BLEU1':
+    elif metric == "BLEU1":
         score, scores = bleu(1, targets, predictions)
-    elif metric == 'BLEU2':
+    elif metric == "BLEU2":
         score, scores = bleu(2, targets, predictions)
-    elif metric == 'BLEU3':
+    elif metric == "BLEU3":
         score, scores = bleu(3, targets, predictions)
-    elif metric == 'BLEU4':
+    elif metric == "BLEU4":
         score, scores = bleu(4, targets, predictions)
-    elif metric == 'RougeL':
+    elif metric == "RougeL":
         score, scores = rouge(targets, predictions)
-    elif metric == 'Meteor':
+    elif metric == "Meteor":
         score, scores = meteor(targets, predictions)
-    return score, scores 
-
-
+    return score, scores
