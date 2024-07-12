@@ -1,0 +1,59 @@
+kind: project
+metadata:
+  name: tutorial-sushant
+  created: '2024-07-12T10:36:51.957478'
+spec:
+  functions:
+  - name: data-prep
+    spec:
+      kind: job
+      metadata:
+        name: data-prep
+        tag: latest
+        project: tutorial-sushant
+      spec:
+        command: ''
+        args: []
+        image: crcrs
+        build:
+          functionSourceCode: CmltcG9ydCBwYW5kYXMgYXMgcGQKZnJvbSBza2xlYXJuLmRhdGFzZXRzIGltcG9ydCBsb2FkX2JyZWFzdF9jYW5jZXIKCmltcG9ydCBtbHJ1bgoKCkBtbHJ1bi5oYW5kbGVyKG91dHB1dHM9WyJkYXRhc2V0IiwgImxhYmVsX2NvbHVtbiJdKQpkZWYgYnJlYXN0X2NhbmNlcl9nZW5lcmF0b3IoKToKICAgICIiIgogICAgQSBmdW5jdGlvbiB3aGljaCBnZW5lcmF0ZXMgdGhlIGJyZWFzdCBjYW5jZXIgZGF0YXNldAogICAgIiIiCiAgICBicmVhc3RfY2FuY2VyID0gbG9hZF9icmVhc3RfY2FuY2VyKCkKICAgIGJyZWFzdF9jYW5jZXJfZGF0YXNldCA9IHBkLkRhdGFGcmFtZSgKICAgICAgICBkYXRhPWJyZWFzdF9jYW5jZXIuZGF0YSwgY29sdW1ucz1icmVhc3RfY2FuY2VyLmZlYXR1cmVfbmFtZXMKICAgICkKICAgIGJyZWFzdF9jYW5jZXJfbGFiZWxzID0gcGQuRGF0YUZyYW1lKGRhdGE9YnJlYXN0X2NhbmNlci50YXJnZXQsIGNvbHVtbnM9WyJsYWJlbCJdKQogICAgYnJlYXN0X2NhbmNlcl9kYXRhc2V0ID0gcGQuY29uY2F0KAogICAgICAgIFticmVhc3RfY2FuY2VyX2RhdGFzZXQsIGJyZWFzdF9jYW5jZXJfbGFiZWxzXSwgYXhpcz0xCiAgICApCgogICAgcmV0dXJuIGJyZWFzdF9jYW5jZXJfZGF0YXNldCwgImxhYmVsIgo=
+          commands: []
+          code_origin: git://github.com/sushantjha8/Docowlapi.git#refs/heads/master#5d9abb6fbe6d93540b4f62a7bc131da711ee4252
+          origin_filename: data-prep.py
+          requirements: []
+        entry_points:
+          breast_cancer_generator:
+            name: breast_cancer_generator
+            doc: A function which generates the breast cancer dataset
+            parameters: []
+            outputs: []
+            lineno: 9
+            has_varargs: false
+            has_kwargs: false
+        description: ''
+        default_handler: breast_cancer_generator
+        disable_auto_mount: false
+        env: []
+        preemption_mode: prevent
+        state_thresholds:
+          pending_scheduled: 1h
+          pending_not_scheduled: '-1'
+          image_pull_backoff: 1h
+          executing: 24h
+        affinity: null
+        tolerations: null
+        security_context: {}
+      verbose: false
+  workflows: []
+  artifacts: []
+  artifact_path: /artifacts
+  conda: ''
+  source: git://github.com/sushantjha8/Docowlapi.git#refs/heads/master
+  origin_url: git://github.com/sushantjha8/Docowlapi.git#refs/heads/master
+  desired_state: online
+  build:
+    commands: []
+    requirements: []
+  custom_packagers: []
+status:
+  state: online
